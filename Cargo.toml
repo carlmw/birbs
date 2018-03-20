@@ -1,0 +1,8 @@
+[package]
+name = "birds"
+version = "0.1.0"
+authors = ["Carl Whittaker <carl359@gmail.com>"]
+
+[dependencies]
+stdweb = "0.4.1"
+cgmath = "0.16.0"
