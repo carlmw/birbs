@@ -13,7 +13,7 @@ use stdweb::web::event::{
     ResizeEvent,
 };
 use std::ops::*;
-use cgmath::{Vector2, MetricSpace};
+use cgmath::{Vector2, MetricSpace, InnerSpace};
 
 macro_rules! enclose {
     ( ($( $x:ident ),*) $y:expr ) => {
@@ -24,7 +24,8 @@ macro_rules! enclose {
     };
 }
 
-const SIZE: f64 = 600.0;
+const WIDTH: f64 = 1000.0;
+const HEIGHT: f64 = 700.0;
 
 struct Boid {
   position: Vector2<f64>,
@@ -42,30 +43,104 @@ fn avoid_walls(position: Vector2<f64>) -> Vector2<f64> {
 
     let target = Vector2 { x: 0.0, y: position.y };
     let mut target = avoid(position, target);
-    target.mul_assign(5.0);
+    target.mul_assign(25.0);
     let acceleration = acceleration.add(target);
 
-    let target = Vector2 { x: SIZE, y: position.y };
+    let target = Vector2 { x: WIDTH, y: position.y };
     let mut target = avoid(position, target);
-    target.mul_assign(5.0);
+    target.mul_assign(25.0);
     let acceleration = acceleration.add(target);
 
     let target = Vector2 { x: position.x, y: 0.0 };
     let mut target = avoid(position, target);
-    target.mul_assign(5.0);
+    target.mul_assign(25.0);
     let acceleration = acceleration.add(target);
 
-    let target = Vector2 { x: position.x, y: SIZE };
+    let target = Vector2 { x: position.x, y: HEIGHT };
     let mut target = avoid(position, target);
-    target.mul_assign(5.0);
+    target.mul_assign(25.0);
     let acceleration = acceleration.add(target);
 
     return acceleration;
 }
 
-fn flock(boid: &Boid, _boids: &Vec<Boid>) -> Boid {
-    let acceleration = avoid_walls(boid.position);
-    let velocity = boid.velocity.add(acceleration);
+const MAX_SPEED: f64 = 3.0;
+const MAX_STEER_FORCE: f64 = 0.1;
+const NEIGHBOUR_DISTANCE: f64 = 600.0;
+const DESIRED_SEPARATION: f64 = 100.0;
+
+fn align(neighbours: &Vec<&Boid>) -> Vector2<f64> {
+    let steer = neighbours.iter()
+    .fold(Vector2{ x: 0.0, y: 0.0 }, |steer, &boid| {
+        steer.add(boid.velocity)
+    });
+
+    let length = neighbours.len();
+    if length == 0 {
+        return steer;
+    }
+
+    steer.div(length as f64 / MAX_STEER_FORCE)
+}
+
+fn separate(current: &Boid, neighbours: &Vec<&Boid>) -> Vector2<f64> {
+    neighbours.iter()
+    .filter(|&boid| {
+        let distance = boid.position.distance2(current.position);
+        distance > 0.0 && distance < DESIRED_SEPARATION
+    })
+    .fold(Vector2{ x: 0.0, y: 0.0 }, |steer, &boid| {
+        let distance = boid.position.distance2(current.position);
+        let diff = current
+        .position
+        .sub(boid.position)
+        .normalize()
+        .div(distance);
+
+        steer.add(diff)
+    })
+}
+
+fn cohede(current: &Boid, neighbours: &Vec<&Boid>) -> Vector2<f64> {
+    let steer = neighbours.iter()
+    .fold(Vector2{ x: 0.0, y: 0.0 }, |steer, &boid| {
+        steer.add(boid.position)
+    })
+    .sub(current.position);
+    let length = steer.magnitude();
+
+    if length < MAX_STEER_FORCE {
+        return steer;
+    }
+
+    steer.div(length / MAX_STEER_FORCE)
+}
+
+fn flock(boid: &Boid, boids: &Vec<Boid>) -> Boid {
+    let avoid = avoid_walls(boid.position);
+    let position = boid.position;
+
+    let neighbours = boids.iter().filter(|&boid| {
+        let distance = boid.position.distance2(position);
+        distance > 0.0 && distance < NEIGHBOUR_DISTANCE
+    }).collect::<Vec<&Boid>>();
+
+    let alignment = align(&neighbours);
+    let separation = separate(&boid, &neighbours);
+    let cohesion = cohede(&boid, &neighbours);
+
+    let acceleration = Vector2 { x: 0.0, y: 0.0 }
+    .add(alignment)
+    .add(separation)
+    .add(cohesion)
+    .add(avoid);
+
+    let mut velocity = boid.velocity.add(acceleration);
+    let length = velocity.magnitude();
+
+    if length > MAX_SPEED {
+        velocity.div_assign(length / MAX_SPEED);
+    }
 
     Boid {
         position: boid.position.add(velocity),
@@ -83,8 +158,8 @@ fn main() {
 
     for i in 0..1000 {
         boids.push(Boid {
-            position: Vector2 { x: i as f64, y: i as f64},
-            velocity: Vector2 { x: 1.0, y: 2.0 },
+            position: Vector2 { x: i as f64 * 0.1, y: 300.0 },
+            velocity: Vector2 { x: 0.1, y: 0.2 },
         })
     }
 
@@ -107,12 +182,12 @@ fn main() {
 
         context.clear_rect(0.0, 0.0, width as f64, height as f64);
 
-        context.set_fill_style_color("#dddddd");
-        context.fill_rect(0.0, 0.0, SIZE, SIZE);
-        context.set_fill_style_color("#ff0000");
+        context.set_fill_style_color("#000000");
+        context.fill_rect(0.0, 0.0, WIDTH, HEIGHT);
+        context.set_fill_style_color("#00ffff");
 
         for boid in boids.iter() {
-            context.fill_rect(boid.position.x, boid.position.y, 5.0, 5.0);
+            context.fill_rect(boid.position.x, boid.position.y, 2.0, 2.0);
         }
 
         window().request_animation_frame(move |_| {
