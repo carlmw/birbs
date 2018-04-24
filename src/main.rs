@@ -39,35 +39,32 @@ fn avoid(position: Vector2<f64>, target: Vector2<f64>) -> Vector2<f64> {
 }
 
 fn avoid_walls(position: Vector2<f64>) -> Vector2<f64> {
-    let acceleration = Vector2 { x: 0.0, y: 0.0 };
+    let mut acceleration = Vector2 { x: 0.0, y: 0.0 };
 
-    let target = Vector2 { x: 0.0, y: position.y };
-    let mut target = avoid(position, target);
+    let mut target = avoid(position, Vector2 { x: 0.0, y: position.y });
     target.mul_assign(25.0);
-    let acceleration = acceleration.add(target);
+    acceleration.add_assign(target);
 
-    let target = Vector2 { x: WIDTH, y: position.y };
-    let mut target = avoid(position, target);
+    // let target = Vector2 { x: WIDTH, y: position.y };
+    let mut target = avoid(position, Vector2 { x: WIDTH, y: position.y });
     target.mul_assign(25.0);
-    let acceleration = acceleration.add(target);
+    acceleration.add_assign(target);
 
-    let target = Vector2 { x: position.x, y: 0.0 };
-    let mut target = avoid(position, target);
+    let mut target = avoid(position, Vector2 { x: position.x, y: 0.0 });
     target.mul_assign(25.0);
-    let acceleration = acceleration.add(target);
+    acceleration.add_assign(target);
 
-    let target = Vector2 { x: position.x, y: HEIGHT };
-    let mut target = avoid(position, target);
+    let mut target = avoid(position, Vector2 { x: position.x, y: HEIGHT });
     target.mul_assign(25.0);
-    let acceleration = acceleration.add(target);
+    acceleration.add_assign(target);
 
-    return acceleration;
+    acceleration
 }
 
-const MAX_SPEED: f64 = 3.0;
-const MAX_STEER_FORCE: f64 = 0.1;
-const NEIGHBOUR_DISTANCE: f64 = 600.0;
-const DESIRED_SEPARATION: f64 = 100.0;
+const MAX_SPEED: f64 = 2.0;
+const MAX_STEER_FORCE: f64 = 0.02;
+const NEIGHBOUR_DISTANCE: f64 = 200.0;
+const DESIRED_SEPARATION: f64 = 25.0;
 
 fn align(neighbours: &Vec<&Boid>) -> Vector2<f64> {
     let steer = neighbours.iter()
@@ -84,28 +81,33 @@ fn align(neighbours: &Vec<&Boid>) -> Vector2<f64> {
 }
 
 fn separate(current: &Boid, neighbours: &Vec<&Boid>) -> Vector2<f64> {
-    neighbours.iter()
-    .filter(|&boid| {
+    let mut steer = Vector2{ x: 0.0, y: 0.0 };
+
+    for boid in neighbours.iter() {
         let distance = boid.position.distance2(current.position);
-        distance > 0.0 && distance < DESIRED_SEPARATION
-    })
-    .fold(Vector2{ x: 0.0, y: 0.0 }, |steer, &boid| {
-        let distance = boid.position.distance2(current.position);
+
+        if distance == 0.0 || distance > DESIRED_SEPARATION {
+            continue;
+        }
+
         let diff = current
         .position
         .sub(boid.position)
         .normalize()
         .div(distance);
 
-        steer.add(diff)
-    })
+        steer.add_assign(diff);
+    }
+    steer
 }
 
 fn cohede(current: &Boid, neighbours: &Vec<&Boid>) -> Vector2<f64> {
+    let count = neighbours.len() as f64;
     let steer = neighbours.iter()
     .fold(Vector2{ x: 0.0, y: 0.0 }, |steer, &boid| {
         steer.add(boid.position)
     })
+    .div(count)
     .sub(current.position);
     let length = steer.magnitude();
 
@@ -158,7 +160,7 @@ fn main() {
 
     for i in 0..1000 {
         boids.push(Boid {
-            position: Vector2 { x: i as f64 * 0.1, y: 300.0 },
+            position: Vector2 { x: 400.0 + i as f64 * 0.1, y: 300.0 },
             velocity: Vector2 { x: 0.1, y: 0.2 },
         })
     }
