@@ -6,3 +6,9 @@ authors = ["Carl Whittaker <carl359@gmail.com>"]
 [dependencies]
 stdweb = "0.4.1"
 cgmath = "0.16.0"
+ntree = "0.1.0"
+random_color = "0.4.2"
+
+[dependencies.rand]
+version = "0.5.1"
+features = ["stdweb"]
