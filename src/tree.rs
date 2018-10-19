@@ -4,19 +4,19 @@ use boid::Boid;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct QuadTreeRegion {
-    pub x: f64,
-    pub y: f64,
-    pub width: f64,
-    pub height: f64
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32
 }
 
 impl QuadTreeRegion {
-    pub fn square(x: f64, y: f64, wh: f64) -> QuadTreeRegion {
+    pub fn square(x: f32, y: f32, wh: f32) -> QuadTreeRegion {
         QuadTreeRegion { x: x, y: y, width: wh, height: wh }
     }
 }
 
-fn contains_point(region: &QuadTreeRegion, point: Vector2<f64>) -> bool {
+fn contains_point(region: &QuadTreeRegion, point: Vector2<f32>) -> bool {
     region.x <= point.x &&
     region.y <= point.y &&
     (region.x + region.width) >= point.x &&
@@ -210,7 +210,7 @@ mod tests {
         )
     }
 
-    fn make_boid(x: f64, y: f64) -> Boid {
+    fn make_boid(x: f32, y: f32) -> Boid {
         Boid { position: Vector2 { x: x, y: y }, velocity: Vector2 { x: 0.0, y: 0.0 }, color: "#ff0000".to_string() }
     }
 }

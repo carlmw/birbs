@@ -2,18 +2,17 @@ extern crate cgmath;
 use std::ops::*;
 use cgmath::{Vector2, MetricSpace, InnerSpace};
 
-const MAX_SPEED: f64 = 4.0;
-const MAX_STEER_FORCE: f64 = 0.5;
-const DESIRED_SEPARATION: f64 = 500.0;
+const MAX_SPEED: f32 = 4.0;
+const MAX_STEER_FORCE: f32 = 0.5;
+const DESIRED_SEPARATION: f32 = 500.0;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Boid {
-  pub position: Vector2<f64>,
-  pub velocity: Vector2<f64>,
-  pub color: String,
+  pub position: Vector2<f32>,
+  pub velocity: Vector2<f32>,
 }
 
-pub fn flock(boid: &Boid, neighbours: Vec<&Boid>, width: f64, height: f64) -> Boid {
+pub fn flock(boid: &Boid, neighbours: Vec<&Boid>, width: f32, height: f32) -> Boid {
     let avoid = avoid_walls(boid.position, width, height);
     let alignment = align(&neighbours);
     let separation = separate(&boid, &neighbours);
@@ -35,17 +34,16 @@ pub fn flock(boid: &Boid, neighbours: Vec<&Boid>, width: f64, height: f64) -> Bo
     Boid {
         position: boid.position.add(velocity),
         velocity: velocity,
-        color: boid.color.clone(),
     }
 }
 
-fn avoid(position: Vector2<f64>, target: Vector2<f64>) -> Vector2<f64> {
+fn avoid(position: Vector2<f32>, target: Vector2<f32>) -> Vector2<f32> {
     let mut steer = position.sub(target);
     steer.mul_assign(1.0 / position.distance2(target));
     steer
 }
 
-fn avoid_walls(position: Vector2<f64>, width: f64, height: f64) -> Vector2<f64> {
+fn avoid_walls(position: Vector2<f32>, width: f32, height: f32) -> Vector2<f32> {
     let mut acceleration = Vector2 { x: 0.0, y: 0.0 };
 
     let mut target = avoid(position, Vector2 { x: 0.0, y: position.y });
@@ -67,7 +65,7 @@ fn avoid_walls(position: Vector2<f64>, width: f64, height: f64) -> Vector2<f64> 
     acceleration
 }
 
-fn align(neighbours: &Vec<&Boid>) -> Vector2<f64> {
+fn align(neighbours: &Vec<&Boid>) -> Vector2<f32> {
     let steer = neighbours.iter()
     .fold(Vector2{ x: 0.0, y: 0.0 }, |steer, ref boid| {
         steer.add(boid.velocity)
@@ -78,10 +76,10 @@ fn align(neighbours: &Vec<&Boid>) -> Vector2<f64> {
         return steer;
     }
 
-    steer.div(length as f64 / MAX_STEER_FORCE)
+    steer.div(length as f32 / MAX_STEER_FORCE)
 }
 
-fn separate(current: &Boid, neighbours: &Vec<&Boid>) -> Vector2<f64> {
+fn separate(current: &Boid, neighbours: &Vec<&Boid>) -> Vector2<f32> {
     neighbours.iter()
     .fold(Vector2{ x: 0.0, y: 0.0 }, |steer, ref boid| {
         let distance = boid.position.distance2(current.position);
@@ -100,8 +98,8 @@ fn separate(current: &Boid, neighbours: &Vec<&Boid>) -> Vector2<f64> {
     })
 }
 
-fn cohede(current: &Boid, neighbours: &Vec<&Boid>) -> Vector2<f64> {
-    let count = neighbours.len() as f64;
+fn cohede(current: &Boid, neighbours: &Vec<&Boid>) -> Vector2<f32> {
+    let count = neighbours.len() as f32;
     if count == 0.0 {
         return Vector2{ x: 0.0, y: 0.0 };
     }
@@ -110,7 +108,7 @@ fn cohede(current: &Boid, neighbours: &Vec<&Boid>) -> Vector2<f64> {
     .fold(Vector2{ x: 0.0, y: 0.0 }, |steer, ref boid| {
         steer.add(boid.position)
     })
-    .div(neighbours.len() as f64)
+    .div(neighbours.len() as f32)
     .sub(current.position);
 
     let length = steer.magnitude();
