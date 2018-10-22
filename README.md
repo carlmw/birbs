@@ -16,20 +16,27 @@ Well i'm learning Rust and the boids simulation facinates me.
 
 At the time of development you'd need a nightly build of Rust (I was on 1.31.0 — if you find the project is no longer working on later version let me know!).
 
-You'll also need cargo-web:
+You'll also need [wasm-pack](https://rustwasm.github.io/wasm-pack/):
 
 ```bash
-cargo install cargo-web
+wasm-pack build
 
 ```
 
-With cargo web and any dependencies it demands you can start the project with
+This will generate an npm compatible package in the `/pkg` directory
+
+# Demo
+
+The project comes with a demo to try things out.
+
+From the root of the project you can run
 
 ```bash
-cargo web start --target=wasm32-unknown-unknown
+yarn
+yarn start
 ```
 
-This will build the project and serve it up over a local web server
+This will build a minimal demo (found in `index.js` and serve it up over a local web server
 
 **Tests**
 
